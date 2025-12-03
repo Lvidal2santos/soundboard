@@ -13,6 +13,7 @@
             flex-direction: column;
             align-items: center;
             background-color: #f4f7f9;
+            touch-action: manipulation;
         }
 
         #container {
@@ -23,7 +24,7 @@
             flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
-            margin-bottom: 80px;
+            margin-bottom: 100px;
         }
 
         .action-button {
@@ -35,8 +36,8 @@
             color: white;
             font-size: 48px;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.1s, box-shadow 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -53,26 +54,28 @@
         }
 
         @keyframes pulse {
-            from { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
-            to { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+            from { box-shadow: 0 0 0 0 rgba(255,0,0,0.7); }
+            to { box-shadow: 0 0 0 15px rgba(255,0,0,0); }
         }
-        
+
+        /* Delete overlay - now fully mobile compatible */
         .delete-overlay {
             position: absolute;
             top: -10px;
             right: -10px;
-            width: 30px;
-            height: 30px;
+            width: 40px;
+            height: 40px;
             background-color: red;
             border-radius: 50%;
             color: white;
-            font-size: 16px;
+            font-size: 24px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-            z-index: 5;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 10;
+            border: 3px solid white;
         }
 
         #fixed-controls {
@@ -80,89 +83,55 @@
             bottom: 20px;
             right: 20px;
             display: flex;
-            gap: 10px;
-            z-index: 10;
+            gap: 12px;
+            z-index: 100;
         }
         
         .fixed-action-button {
-            width: 60px;
-            height: 60px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             color: white;
-            font-size: 30px;
+            font-size: 32px;
             border: none;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.25);
             cursor: pointer;
         }
 
-        #addButton {
-            background-color: #4cd964;
-        }
-        
-        #editButton {
-            background-color: #ff9500;
-        }
-        
-        .edit-mode-active {
-            background-color: #5856d6 !important;
-        }
+        #addButton { background-color: #4cd964; }
+        #editButton { background-color: #ff9500; }
+        .edit-mode-active { background-color: #5856d6 !important; }
 
         /* Modal */
         #modal {
             position: fixed;
             top: 0; left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.75);
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 20;
+            z-index: 200;
         }
 
         .modal-content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            width: 80%;
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            width: 85%;
             max-width: 400px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        .modal-content label {
-            display: block;
-            margin-top: 15px;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        .modal-content input[type="color"],
-        .modal-content input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-            font-size: 16px;
-        }
-
-        .modal-content input[type="color"] {
-            height: 50px;
-            padding: 0;
-        }
-        
         #emoticonInput {
             text-align: center;
-            font-size: 48px;
-            height: 80px;
-            cursor: pointer;
-            background: #f0f0f0;
+            font-size: 56px;
+            height: 90px;
+            background: #f8f8f8;
+            border: 2px solid #ddd;
         }
 
-        #emoticonInput::placeholder {
-            color: #aaa;
-            font-size: 18px;
-        }
+        #emoticonInput::placeholder { color: #bbb; font-size: 20px; }
     </style>
 </head>
 <body>
@@ -177,33 +146,25 @@
     <!-- MODAL -->
     <div id="modal">
         <div class="modal-content">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h3>New Button</h3>
-                <button id="closeModal" style="background:none; border:none; font-size:28px; cursor:pointer; padding:0;">×</button>
+                <button id="closeModal" style="background:none;border:none;font-size:32px;cursor:pointer;">×</button>
             </div>
 
             <label for="colorInput">Button Color:</label>
             <input type="color" id="colorInput" value="#6d7ef5">
 
-            <label for="emoticonInput">Emoticon (Tap to pick emoji):</label>
-            <input 
-                type="text" 
-                id="emoticonInput" 
-                placeholder="Tap here" 
-                maxlength="2" 
-                value="Music"
-                readonly
-            >
+            <label for="emoticonInput">Emoticon (Tap to pick):</label>
+            <input type="text" id="emoticonInput" placeholder="Tap here" maxlength="2" value="Music" readonly>
 
-            <div style="display: flex; gap: 10px; margin-top: 25px;">
-                <button id="cancelButton" style="flex:1; padding:12px; background:#ccc; border:none; border-radius:5px; font-size:16px;">Cancel</button>
-                <button id="saveButton" style="flex:1; padding:12px; background:#4cd964; color:white; border:none; border-radius:5px; font-size:16px;">Create</button>
+            <div style="display:flex; gap:12px; margin-top:30px;">
+                <button id="cancelButton" style="flex:1; padding:14px; background:#ccc; border:none; border-radius:8px; font-size:17px;">Cancel</button>
+                <button id="saveButton" style="flex:1; padding:14px; background:#4cd964; color:white; border:none; border-radius:8px; font-size:17px;">Create</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- Elements ---
         const CONTAINER = document.getElementById('container');
         const ADD_BUTTON = document.getElementById('addButton');
         const EDIT_BUTTON = document.getElementById('editButton');
@@ -214,245 +175,11 @@
         const CLOSE_MODAL_BTN = document.getElementById('closeModal');
         const CANCEL_BUTTON = document.getElementById('cancelButton');
 
-        // --- Config ---
         const HOLD_TO_START_MS = 3000;
         const MAX_RECORD_DURATION_MS = 2000;
         const VOLUME_GAIN_LEVEL = 5.0;
 
         let buttonsData = JSON.parse(localStorage.getItem('soundboardButtons') || '[]');
         let isEditMode = false;
-        let mediaRecorder;
-        let audioChunks = [];
-        let holdTimer;
-        let autoStopTimer;
-        let audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-        // --- Storage ---
-        function saveButtons() {
-            localStorage.setItem('soundboardButtons', JSON.stringify(buttonsData));
-        }
-
-        function updateButtonAudio(id, audioDataUrl) {
-            const index = buttonsData.findIndex(btn => btn.id === id);
-            if (index !== -1) {
-                buttonsData[index].audioDataUrl = audioDataUrl;
-                saveButtons();
-                alert('Recording saved!');
-            }
-        }
-        
-        function deleteButton(id) {
-            if (confirm("Delete this button and its recording?")) {
-                buttonsData = buttonsData.filter(btn => btn.id !== id);
-                saveButtons();
-                const el = document.getElementById(`btn-${id}`);
-                if (el) el.remove();
-            }
-        }
-
-        function dataURLtoBuffer(dataURL) {
-            const base64 = dataURL.split(',')[1];
-            const raw = window.atob(base64);
-            const array = new Uint8Array(raw.length);
-            for (let i = 0; i < raw.length; i++) array[i] = raw.charCodeAt(i);
-            return array.buffer;
-        }
-
-        // --- Audio ---
-        function stopRecording(buttonId, buttonElement, stream) {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-            if (stream) stream.getTracks().forEach(t => t.stop());
-            clearTimeout(autoStopTimer);
-            buttonElement.classList.remove('recording');
-            const data = buttonsData.find(b => b.id === buttonId);
-            if (data) buttonElement.innerHTML = data.emoticon;
-        }
-
-        function startRecording(buttonId, buttonElement) {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    audioChunks = [];
-                    mediaRecorder = new MediaRecorder(stream);
-                    
-                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                    mediaRecorder.onstop = () => {
-                        const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                        const reader = new FileReader();
-                        reader.onloadend = () => updateButtonAudio(buttonId, reader.result);
-                        reader.readAsDataURL(blob);
-                        stream.getTracks().forEach(t => t.stop());
-                    };
-
-                    mediaRecorder.start();
-                    buttonElement.classList.add('recording');
-                    buttonElement.innerHTML = 'REC...';
-
-                    autoStopTimer = setTimeout(() => stopRecording(buttonId, buttonElement, stream), MAX_RECORD_DURATION_MS);
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('Microphone access denied. Please allow microphone permission.');
-                    buttonElement.classList.remove('recording');
-                });
-        }
-
-        function playAudio(audioDataUrl) {
-            if (!audioDataUrl) {
-                alert("No recording yet! Hold a button for 3 seconds to record.");
-                return;
-            }
-            const buffer = dataURLtoBuffer(audioDataUrl);
-            audioContext.decodeAudioData(buffer, buf => {
-                const source = audioContext.createBufferSource();
-                source.buffer = buf;
-                const gain = audioContext.createGain();
-                gain.gain.value = VOLUME_GAIN_LEVEL;
-                source.connect(gain);
-                gain.connect(audioContext.destination);
-                if (audioContext.state === 'suspended') audioContext.resume();
-                source.start(0);
-            }, err => {
-                console.error(err);
-                alert("Could not play audio.");
-            });
-        }
-
-        // --- Button Events ---
-        function setupButtonEvents(buttonElement, buttonData) {
-            let isHolding = false;
-
-            function handleStart(e) {
-                e.preventDefault();
-                if (isEditMode) return;
-
-                isHolding = false;
-                holdTimer = setTimeout(() => {
-                    isHolding = true;
-                    startRecording(buttonData.id, buttonElement);
-                }, HOLD_TO_START_MS);
-            }
-
-            function handleEnd() {
-                clearTimeout(holdTimer);
-                if (isEditMode) return;
-
-                if (isHolding) {
-                    // was recording → stop it
-                    const stream = mediaRecorder ? mediaRecorder.stream : null;
-                    stopRecording(buttonData.id, buttonElement, stream);
-                } else {
-                    // quick tap → play
-                    playAudio(buttonData.audioDataUrl);
-                }
-            }
-
-            buttonElement.addEventListener('touchstart', handleStart);
-            buttonElement.addEventListener('touchend', handleEnd);
-            buttonElement.addEventListener('mousedown', handleStart);
-            buttonElement.addEventListener('mouseup', handleEnd);
-            buttonElement.addEventListener('mouseleave', handleEnd);
-        }
-
-        function renderButton(data) {
-            const btn = document.createElement('button');
-            btn.className = 'action-button';
-            btn.id = `btn-${data.id}`;
-            btn.style.backgroundColor = data.color;
-            btn.innerHTML = data.emoticon;
-            setupButtonEvents(btn, data);
-            CONTAINER.appendChild(btn);
-        }
-
-        // --- Edit Mode ---
-        function toggleEditMode() {
-            isEditMode = !isEditMode;
-            EDIT_BUTTON.classList.toggle('edit-mode-active', isEditMode);
-
-            document.querySelectorAll('.action-button').forEach(btn => {
-                const id = btn.id.replace('btn-', '');
-                if (isEditMode) {
-                    const overlay = document.createElement('div');
-                    overlay.className = 'delete-overlay';
-                    overlay.innerHTML = 'X';
-                    overlay.onclick = e => {
-                        e.stopPropagation();
-                        deleteButton(id);
-                    };
-                    btn.appendChild(overlay);
-                    btn.style.boxShadow = '0 0 10px 3px red';
-                } else {
-                    const overlay = btn.querySelector('.delete-overlay');
-                    if (overlay) overlay.remove();
-                    btn.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                }
-            });
-
-            if (isEditMode) alert("Edit Mode ON – Tap the red X to delete a button.");
-        }
-
-        // --- Modal Controls ---
-        function closeModal() {
-            MODAL.style.display = 'none';
-        }
-
-        ADD_BUTTON.addEventListener('click', () => {
-            if (isEditMode) toggleEditMode();
-            EMOTICON_INPUT.value = 'Music';
-            MODAL.style.display = 'flex';
-        });
-
-        EDIT_BUTTON.addEventListener('click', toggleEditMode);
-
-        CLOSE_MODAL_BTN.addEventListener('click', closeModal);
-        CANCEL_BUTTON.addEventListener('click', closeModal);
-
-        MODAL.addEventListener('click', e => {
-            if (e.target === MODAL) closeModal();
-        });
-
-        // Emoji picker helper
-        EMOTICON_INPUT.addEventListener('click', () => {
-            EMOTICON_INPUT.removeAttribute('readonly');
-            EMOTICON_INPUT.focus();
-            EMOTICON_INPUT.select();
-            alert("Use your device's emoji keyboard!\n\nOn iPhone: tap the smiley or globe key.\nOn Android: tap the smiley key.");
-        });
-
-        EMOTICON_INPUT.addEventListener('blur', () => {
-            // Re-limit to first 2 emojis and make readonly again
-            const val = EMOTICON_INPUT.value;
-            const emojis = [...val.matchAll(/\p{Emoji_Presentation}|\p{Emoji}\p{Emoji_Modifier_Base}*/gu)]
-                .map(m => m[0]).slice(0, 2).join('');
-            EMOTICON_INPUT.value = emojis || 'Question';
-            EMOTICON_INPUT.setAttribute('readonly', true);
-        });
-
-        // Save new button
-        SAVE_BUTTON.addEventListener('click', () => {
-            const emoji = EMOTICON_INPUT.value.trim() || 'New';
-            if (!emoji) {
-                alert("Please choose an emoji!");
-                return;
-            }
-            const newBtn = {
-                id: Date.now().toString(),
-                color: COLOR_INPUT.value,
-                emoticon: emoji,
-                audioDataUrl: null
-            };
-            buttonsData.push(newBtn);
-            saveButtons();
-            renderButton(newBtn);
-            closeModal();
-        });
-
-        // Load existing buttons
-        function loadButtons() {
-            CONTAINER.innerHTML = '';
-            buttonsData.forEach(renderButton);
-        }
-
-        loadButtons();
-    </script>
-</body>
-</html>
+        let mediaRecorder, audioChunks = [], holdTimer, autoStopTimer;
+        let audioContext
