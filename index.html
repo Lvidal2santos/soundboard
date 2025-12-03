@@ -142,8 +142,15 @@
             <label for="colorInput">Button Color:</label>
             <input type="color" id="colorInput" value="#6d7ef5">
 
-            <label for="emoticonInput">Emoticon (e.g., 🚀):</label>
-            <input type="text" id="emoticonInput" placeholder="Enter one emoticon" maxlength="2" value="🎵">
+            <label for="emoticonInput">Emoticon (Tap and hold to pick):</label>
+            <input 
+                type="text" 
+                id="emoticonInput" 
+                placeholder="Tap to select emoji..." 
+                maxlength="2" 
+                value="🎵"
+                style="text-align: center; font-size: 24px; cursor: pointer;"
+            >
 
             <button id="saveButton">Create Button</button>
         </div>
