@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Mic Button Recorder</title>
+    <title>Mic Button Recorder V2</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -23,7 +23,7 @@
             flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
-            margin-bottom: 80px; /* Space for the fixed + button */
+            margin-bottom: 80px;
         }
 
         .action-button {
@@ -39,8 +39,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            user-select: none; /* Prevents text selection on mobile */
-            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .action-button:active {
@@ -158,12 +158,17 @@
         const COLOR_INPUT = document.getElementById('colorInput');
         const EMOTICON_INPUT = document.getElementById('emoticonInput');
         
-        const HOLD_DURATION_MS = 5000;
+        // Timer constants
+        const HOLD_TO_START_MS = 5000; // 5 seconds to start recording
+        const MAX_RECORD_DURATION_MS = 2000; // Auto-stop after 2 seconds of recording
+        
         let buttonsData = JSON.parse(localStorage.getItem('soundboardButtons') || '[]');
         
         let mediaRecorder;
         let audioChunks = [];
         let holdTimer;
+        let autoStopTimer;
+        let audioContext = new (window.AudioContext || window.webkitAudioContext)(); // For reliable playback
 
         // --- Data Management ---
         function saveButtons() {
@@ -179,7 +184,42 @@
             }
         }
 
+        // Helper function to convert Data URL to ArrayBuffer for Web Audio API
+        function dataURLtoBuffer(dataURL) {
+            const BASE64_MARKER = ';base64,';
+            const base64Index = dataURL.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
+            const base64 = dataURL.substring(base64Index);
+            const raw = window.atob(base64);
+            const rawLength = raw.length;
+            const array = new Uint8Array(new ArrayBuffer(rawLength));
+
+            for(let i = 0; i < rawLength; i++) {
+                array[i] = raw.charCodeAt(i);
+            }
+            return array.buffer;
+        }
+
         // --- Audio Functions ---
+
+        function stopRecording(buttonId, buttonElement, stream) {
+            // Stop the media recorder
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+
+            // Stop the stream tracks to release the mic
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            // Clear any pending timers
+            clearTimeout(autoStopTimer);
+
+            // Update UI
+            buttonElement.classList.remove('recording');
+            buttonElement.innerHTML = buttonsData.find(b => b.id === buttonId).emoticon;
+        }
+
 
         function startRecording(buttonId, buttonElement) {
             // Request microphone access
@@ -199,8 +239,8 @@
                             updateButtonAudio(buttonId, reader.result);
                         };
                         reader.readAsDataURL(audioBlob);
-
-                        // Stop the stream tracks to release the mic
+                        
+                        // Stop the stream tracks if not already stopped by main stop function
                         stream.getTracks().forEach(track => track.stop());
                         buttonElement.classList.remove('recording');
                         buttonElement.innerHTML = buttonsData.find(b => b.id === buttonId).emoticon;
@@ -209,31 +249,48 @@
                     mediaRecorder.start();
                     buttonElement.classList.add('recording');
                     buttonElement.innerHTML = '🔴 REC...';
+
+                    // Set timer to automatically stop recording after MAX_RECORD_DURATION_MS
+                    autoStopTimer = setTimeout(() => {
+                        stopRecording(buttonId, buttonElement, stream);
+                    }, MAX_RECORD_DURATION_MS);
+
                 })
                 .catch(err => {
-                    console.error('Microphone access denied:', err);
-                    alert('Microphone access required for recording. Please check permissions.');
+                    console.error('Microphone access denied or failed:', err);
+                    alert('Microphone access failed. Please ensure permissions are granted and try again.');
                     buttonElement.classList.remove('recording');
                 });
         }
 
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-        }
-
+        // FIX: Using Web Audio API for reliable playback
         function playAudio(audioDataUrl) {
             if (!audioDataUrl) {
+                console.log("No audio recorded yet.");
                 alert("No sound recorded yet. Hold the button for 5 seconds to record!");
                 return;
             }
+
             try {
-                const audio = new Audio(audioDataUrl);
-                audio.play();
+                // 1. Convert Data URL to a buffer
+                const audioBuffer = dataURLtoBuffer(audioDataUrl);
+                
+                // 2. Decode the audio data
+                audioContext.decodeAudioData(audioBuffer, (buffer) => {
+                    // 3. Create a source node
+                    const source = audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    
+                    // 4. Connect to speakers and play
+                    source.connect(audioContext.destination);
+                    source.start(0);
+                }, (e) => {
+                    console.error("Error decoding audio data:", e);
+                    alert("Error: Could not decode and play the recorded audio.");
+                });
             } catch (e) {
-                console.error("Error playing audio:", e);
-                alert("Could not play audio.");
+                console.error("Playback error:", e);
+                alert("Error during playback. Check console for details.");
             }
         }
 
@@ -241,38 +298,39 @@
 
         function setupButtonEvents(buttonElement, buttonData) {
             let isHolding = false;
-            let tapStartTime;
+            let recordingStream = null;
 
-            // Use 'mousedown'/'mouseup' for testing on a desktop/laptop
-            // Use 'touchstart'/'touchend' for mobile devices
             const startEvent = 'touchstart';
             const endEvent = 'touchend';
             
             // 1. START HOLD/TAP
             buttonElement.addEventListener(startEvent, (e) => {
-                // Prevent browser-level context menus
                 e.preventDefault(); 
                 
-                tapStartTime = Date.now();
-                isHolding = false; // Assume it's a tap until timer completes
+                isHolding = false; 
 
                 // Start the timer to detect a 5-second hold
                 holdTimer = setTimeout(() => {
-                    isHolding = true; // The timer completed, so it's a hold
+                    isHolding = true; // Timer completed, it's a hold, start recording
                     startRecording(buttonData.id, buttonElement);
-                }, HOLD_DURATION_MS);
+                }, HOLD_TO_START_MS);
             });
 
             // 2. END HOLD/TAP
             buttonElement.addEventListener(endEvent, () => {
-                // Clear the hold timer immediately
+                // Clear the initial hold timer immediately
                 clearTimeout(holdTimer); 
                 
-                // If a recording was started (isHolding is true), stop it
                 if (isHolding) {
-                    stopRecording();
+                    // This was a successful hold, stop the recording immediately upon release (if it didn't auto-stop)
+                    stopRecording(buttonData.id, buttonElement, recordingStream);
                 } else {
-                    // It was a quick tap (timer didn't complete)
+                    // This was a quick tap
+                    // NOTE: The Web Audio API requires a user interaction to activate.
+                    // This tap is exactly that interaction.
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
                     playAudio(buttonData.audioDataUrl);
                 }
             });
@@ -290,7 +348,7 @@
         }
 
         function loadButtons() {
-            CONTAINER.innerHTML = ''; // Clear existing
+            CONTAINER.innerHTML = '';
             buttonsData.forEach(renderButton);
         }
 
@@ -304,10 +362,10 @@
         // Handle button creation from modal
         SAVE_BUTTON.addEventListener('click', () => {
             const newButton = {
-                id: Date.now().toString(), // Simple unique ID
+                id: Date.now().toString(), 
                 color: COLOR_INPUT.value,
                 emoticon: EMOTICON_INPUT.value.trim().substring(0, 2) || '❓',
-                audioDataUrl: null // No audio initially
+                audioDataUrl: null
             };
 
             buttonsData.push(newButton);
