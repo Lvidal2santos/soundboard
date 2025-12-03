@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Mic Button Recorder V2</title>
+    <title>Mic Button Recorder Pro</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -115,6 +115,13 @@
             height: 50px;
             padding: 0;
         }
+        
+        /* Style for the emoticon input to encourage emoji use */
+        .modal-content input[type="text"]#emoticonInput {
+            text-align: center; 
+            font-size: 24px; 
+            cursor: pointer;
+        }
 
         #saveButton {
             margin-top: 20px;
@@ -149,7 +156,6 @@
                 placeholder="Tap to select emoji..." 
                 maxlength="2" 
                 value="🎵"
-                style="text-align: center; font-size: 24px; cursor: pointer;"
             >
 
             <button id="saveButton">Create Button</button>
@@ -168,17 +174,17 @@
         // Timer constants
         const HOLD_TO_START_MS = 5000; // 5 seconds to start recording
         const MAX_RECORD_DURATION_MS = 2000; // Auto-stop after 2 seconds of recording
+        const TAP_RESET_MS = 400; // Time window to count consecutive taps
+        const TRIPLE_TAP_REQUIRED = 3; // The number of taps needed to delete
+        const VOLUME_GAIN_LEVEL = 2.5; // Gain level for volume boost (2.5 is 250%)
 
-        // Output constants
-        const VOLUME_GAIN_LEVEL = 10.0; // Experiment with this value (e.g., 2.0 to 4.0)
-        
         let buttonsData = JSON.parse(localStorage.getItem('soundboardButtons') || '[]');
         
         let mediaRecorder;
         let audioChunks = [];
         let holdTimer;
         let autoStopTimer;
-        let audioContext = new (window.AudioContext || window.webkitAudioContext)(); // For reliable playback
+        let audioContext = new (window.AudioContext || window.webkitAudioContext)(); 
 
         // --- Data Management ---
         function saveButtons() {
@@ -191,6 +197,23 @@
                 buttonsData[index].audioDataUrl = audioDataUrl;
                 saveButtons();
                 alert('Recording saved successfully!');
+            }
+        }
+        
+        function deleteButton(id) {
+            if (confirm("Are you sure you want to delete this button and its recording? This cannot be undone.")) {
+                // 1. Remove from the local array
+                buttonsData = buttonsData.filter(btn => btn.id !== id);
+                
+                // 2. Update localStorage
+                saveButtons();
+                
+                // 3. Remove the button element from the DOM (the screen)
+                const buttonElement = document.getElementById(`btn-${id}`);
+                if (buttonElement) {
+                    buttonElement.remove();
+                }
+                alert('Button deleted.');
             }
         }
 
@@ -227,7 +250,8 @@
 
             // Update UI
             buttonElement.classList.remove('recording');
-            buttonElement.innerHTML = buttonsData.find(b => b.id === buttonId).emoticon;
+            const data = buttonsData.find(b => b.id === buttonId);
+            if(data) buttonElement.innerHTML = data.emoticon;
         }
 
 
@@ -253,7 +277,8 @@
                         // Stop the stream tracks if not already stopped by main stop function
                         stream.getTracks().forEach(track => track.stop());
                         buttonElement.classList.remove('recording');
-                        buttonElement.innerHTML = buttonsData.find(b => b.id === buttonId).emoticon;
+                        const data = buttonsData.find(b => b.id === buttonId);
+                        if(data) buttonElement.innerHTML = data.emoticon;
                     };
 
                     mediaRecorder.start();
@@ -262,7 +287,8 @@
 
                     // Set timer to automatically stop recording after MAX_RECORD_DURATION_MS
                     autoStopTimer = setTimeout(() => {
-                        stopRecording(buttonId, buttonElement, stream);
+                        // Pass the current stream to ensure resources are released upon auto-stop
+                        stopRecording(buttonId, buttonElement, stream); 
                     }, MAX_RECORD_DURATION_MS);
 
                 })
@@ -273,6 +299,7 @@
                 });
         }
 
+        // Using Web Audio API for reliable playback and volume control
         function playAudio(audioDataUrl) {
             if (!audioDataUrl) {
                 console.log("No audio recorded yet.");
@@ -287,8 +314,6 @@
                 // 2. Decode the audio data
                 audioContext.decodeAudioData(audioBuffer, (buffer) => {
                     
-                    // --- VOLUME BOOSTING LOGIC ---
-                    
                     // A. Create the source node (where the audio data comes from)
                     const source = audioContext.createBufferSource();
                     source.buffer = buffer;
@@ -301,8 +326,6 @@
                     source.connect(gainNode);
                     gainNode.connect(audioContext.destination);
                     
-                    // --- END VOLUME BOOSTING LOGIC ---
-                    
                     source.start(0);
                 }, (e) => {
                     console.error("Error decoding audio data:", e);
@@ -314,11 +337,13 @@
             }
         }
 
-        // --- UI and Event Handling ---
+        // --- UI and Event Handling (Triple-Tap Logic) ---
 
         function setupButtonEvents(buttonElement, buttonData) {
             let isHolding = false;
-            let recordingStream = null;
+            let tapCount = 0; 
+            let tapTimeout;   
+            let recordingStream = null; // Reference to the stream for stopping resources
 
             const startEvent = 'touchstart';
             const endEvent = 'touchend';
@@ -326,7 +351,6 @@
             // 1. START HOLD/TAP
             buttonElement.addEventListener(startEvent, (e) => {
                 e.preventDefault(); 
-                
                 isHolding = false; 
 
                 // Start the timer to detect a 5-second hold
@@ -336,22 +360,47 @@
                 }, HOLD_TO_START_MS);
             });
 
-            // 2. END HOLD/TAP
+            // 2. END HOLD/TAP (Playback/Record Stop/Delete Logic)
             buttonElement.addEventListener(endEvent, () => {
                 // Clear the initial hold timer immediately
                 clearTimeout(holdTimer); 
                 
                 if (isHolding) {
-                    // This was a successful hold, stop the recording immediately upon release (if it didn't auto-stop)
+                    // CASE 1: Successful Hold (Recording completed or auto-stop pending)
                     stopRecording(buttonData.id, buttonElement, recordingStream);
+                    
+                    // Crucial: A hold should not count as a tap for deletion
+                    tapCount = 0; 
+                    clearTimeout(tapTimeout);
                 } else {
-                    // This was a quick tap
-                    // NOTE: The Web Audio API requires a user interaction to activate.
-                    // This tap is exactly that interaction.
-                    if (audioContext.state === 'suspended') {
-                        audioContext.resume();
+                    // CASE 2: Single or Multiple Taps
+                    
+                    // Increment the tap counter
+                    tapCount++;
+
+                    // Clear the existing reset timer and set a new one
+                    clearTimeout(tapTimeout);
+                    tapTimeout = setTimeout(() => {
+                        
+                        // If this timer expires, the user stopped tapping.
+                        if (tapCount > 0 && tapCount < TRIPLE_TAP_REQUIRED) {
+                            // It was a single tap or a double tap, so PLAY the sound now
+                            if (audioContext.state === 'suspended') {
+                                audioContext.resume();
+                            }
+                            playAudio(buttonData.audioDataUrl);
+                        }
+                        tapCount = 0; // Reset for the next gesture
+                    }, TAP_RESET_MS);
+
+                    if (tapCount === TRIPLE_TAP_REQUIRED) {
+                        // TRIPLE TAP DETECTED!
+                        clearTimeout(tapTimeout); // Stop the playback timer
+                        deleteButton(buttonData.id);
+                        tapCount = 0; // Reset tap count
                     }
-                    playAudio(buttonData.audioDataUrl);
+                    
+                    // For the first two taps, we do nothing immediately, waiting for the third tap or timeout.
                 }
             });
         }
@@ -384,7 +433,8 @@
             const newButton = {
                 id: Date.now().toString(), 
                 color: COLOR_INPUT.value,
-                emoticon: EMOTICON_INPUT.value.trim().substring(0, 2) || '❓',
+                // Ensure only max 2 characters/emojis are saved
+                emoticon: EMOTICON_INPUT.value.trim().substring(0, 2) || '❓', 
                 audioDataUrl: null
             };
 
