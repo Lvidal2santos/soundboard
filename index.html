@@ -9,129 +9,121 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #f4f7f9;
+            background: #f4f7f9;
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #container {
-            width: 100%;
-            max-width: 600px;
-            padding: 10px;
+            padding: 20px 15px 120px;
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 100px;
+            gap: center;
+            gap: 18px;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .action-button {
             position: relative;
             width: 120px;
             height: 120px;
-            border-radius: 20px;
+            border-radius: 26px;
             border: none;
             color: white;
-            font-size: 48px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            font-size: 56px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+            transition: transform 0.15s;
         }
 
-        .action-button:active {
-            transform: scale(0.95);
-        }
+        .action-button:active { transform: scale(0.92); }
 
         .recording {
-            animation: pulse 1s infinite alternate;
+            animation: pulse 1.2s infinite alternate;
         }
 
         @keyframes pulse {
             from { box-shadow: 0 0 0 0 rgba(255,0,0,0.7); }
-            to { box-shadow: 0 0 0 15px rgba(255,0,0,0); }
+            to { box-shadow: 0 0 0 20px rgba(255,0,0,0); }
         }
 
-        /* Delete overlay - now fully mobile compatible */
-        .delete-overlay {
+        /* BIG RED X — always visible in edit mode */
+        .delete-badge {
             position: absolute;
-            top: -10px;
-            right: -10px;
-            width: 40px;
-            height: 40px;
-            background-color: red;
+            top: -14px;
+            right: -14px;
+            width: 52px;
+            height: 52px;
+            background: #ff3b30;
+            border: 5px solid white;
             border-radius: 50%;
             color: white;
-            font-size: 24px;
+            font-size: 32px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            z-index: 10;
-            border: 3px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            z-index: 9999;
+            pointer-events: auto;
         }
 
+        /* Fixed buttons */
         #fixed-controls {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            bottom: 30px;
+            right: 24px;
             display: flex;
-            gap: 12px;
-            z-index: 100;
-        }
-        
-        .fixed-action-button {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            color: white;
-            font-size: 32px;
-            border: none;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.25);
-            cursor: pointer;
+            gap: 18px;
+            z-index: 10000;
         }
 
-        #addButton { background-color: #4cd964; }
-        #editButton { background-color: #ff9500; }
-        .edit-mode-active { background-color: #5856d6 !important; }
+        .fab {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+            transition: all 0.2s;
+        }
+
+        #addButton { background: #34c759; }
+        #editButton { background: #ff9500; }
+        #editButton.active { background: #5856d6; transform: scale(1.15); }
 
         /* Modal */
         #modal {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.75);
+            inset: 0;
+            background: rgba(0,0,0,0.8);
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 200;
+            z-index: 20000;
         }
 
         .modal-content {
             background: white;
-            padding: 25px;
-            border-radius: 16px;
-            width: 85%;
-            max-width: 400px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
         }
 
         #emoticonInput {
+            font-size: 70px;
+            height: 110px;
             text-align: center;
-            font-size: 56px;
-            height: 90px;
-            background: #f8f8f8;
+            background: #f9f9f9;
             border: 2px solid #ddd;
+            border-radius: 16px;
+            width: 100%;
+            box-sizing: border-box;
         }
-
-        #emoticonInput::placeholder { color: #bbb; font-size: 20px; }
     </style>
 </head>
 <body>
@@ -139,47 +131,161 @@
     <div id="container"></div>
 
     <div id="fixed-controls">
-        <button id="editButton" class="fixed-action-button">Edit</button>
-        <button id="addButton" class="fixed-action-button">+</button>
+        <button id="editButton" class="fab">Pencil</button>
+        <button id="addButton" class="fab">+</button>
     </div>
 
-    <!-- MODAL -->
     <div id="modal">
         <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3>New Button</h3>
-                <button id="closeModal" style="background:none;border:none;font-size:32px;cursor:pointer;">×</button>
-            </div>
+            <h2>New Button</h2>
+            <p><strong>Color:</strong></p>
+            <input type="color" id="colorInput" value="#007aff" style="width:100%;height:60px;border-radius:12px;">
 
-            <label for="colorInput">Button Color:</label>
-            <input type="color" id="colorInput" value="#6d7ef5">
+            <p style="margin:25px 0 10px;"><strong>Emoji (tap to pick):</strong></p>
+            <input type="text" id="emoticonInput" placeholder="Tap here" value="Microphone" readonly>
 
-            <label for="emoticonInput">Emoticon (Tap to pick):</label>
-            <input type="text" id="emoticonInput" placeholder="Tap here" maxlength="2" value="Music" readonly>
-
-            <div style="display:flex; gap:12px; margin-top:30px;">
-                <button id="cancelButton" style="flex:1; padding:14px; background:#ccc; border:none; border-radius:8px; font-size:17px;">Cancel</button>
-                <button id="saveButton" style="flex:1; padding:14px; background:#4cd964; color:white; border:none; border-radius:8px; font-size:17px;">Create</button>
+            <div style="margin-top:35px;display:flex;gap:15px;">
+                <button id="cancelButton" style="flex:1;padding:16px;font-size:18px;border-radius:12px;border:none;background:#ddd;">Cancel</button>
+                <button id="saveButton" style="flex:1;padding:16px;font-size:18px;border-radius:12px;border:none;background:#34c759;color:white;">Create</button>
             </div>
         </div>
     </div>
 
     <script>
-        const CONTAINER = document.getElementById('container');
-        const ADD_BUTTON = document.getElementById('addButton');
-        const EDIT_BUTTON = document.getElementById('editButton');
-        const MODAL = document.getElementById('modal');
-        const SAVE_BUTTON = document.getElementById('saveButton');
-        const COLOR_INPUT = document.getElementById('colorInput');
-        const EMOTICON_INPUT = document.getElementById('emoticonInput');
-        const CLOSE_MODAL_BTN = document.getElementById('closeModal');
-        const CANCEL_BUTTON = document.getElementById('cancelButton');
+        const container = document.getElementById('container');
+        const addBtn = document.getElementById('addButton');
+        const editBtn = document.getElementById('editButton');
+        const modal = document.getElementById('modal');
+        const colorInput = document.getElementById('colorInput');
+        const emojiInput = document.getElementById('emoticonInput');
+        const saveBtn = document.getElementById('saveButton');
+        const cancelBtn = document.getElementById('cancelButton');
 
-        const HOLD_TO_START_MS = 3000;
-        const MAX_RECORD_DURATION_MS = 2000;
-        const VOLUME_GAIN_LEVEL = 5.0;
+        let buttons = JSON.parse(localStorage.getItem('soundboardButtons') || '[]');
+        let editMode = false;
+        let holdTimer, recorder, chunks = [];
 
-        let buttonsData = JSON.parse(localStorage.getItem('soundboardButtons') || '[]');
-        let isEditMode = false;
-        let mediaRecorder, audioChunks = [], holdTimer, autoStopTimer;
-        let audioContext
+        // EDIT MODE — now impossible to miss
+        editBtn.onclick = () => {
+            editMode = !editMode;
+            editBtn.classList.toggle('active', editMode);
+
+            document.querySelectorAll('.action-button').forEach(btn => {
+                if (editMode) {
+                    if (!btn.querySelector('.delete-badge')) {
+                        const x = document.createElement('div');
+                        x.className = 'delete-badge';
+                        x.textContent = 'X';
+                        x.onclick = x.ontouchstart = e => {
+                            e.stopPropagation();
+                            if (confirm('Delete this button?')) {
+                                const id = btn.dataset.id;
+                                buttons = buttons.filter(b => b.id !== id);
+                                localStorage.setItem('soundboardButtons', JSON.stringify(buttons));
+                                btn.remove();
+                            }
+                        };
+                        btn.appendChild(x);
+                        btn.style.animation = 'shake 0.6s';
+                        setTimeout(() => btn.style.animation = '', 600);
+                    }
+                } else {
+                    const badge = btn.querySelector('.delete-badge');
+                    if (badge) badge.remove();
+                }
+            });
+
+            alert(editMode ? "EDIT MODE ON\nTap red X to delete" :)" : "Edit mode off");
+        };
+
+        function createButton(data) {
+            const btn = document.createElement('button');
+            btn.className = 'action-button';
+            btn.dataset.id = data.id;
+            btn.style.backgroundColor = data.color;
+            btn.textContent = data.emoticon;
+
+            btn.addEventListener('touchstart', e => {
+                if (editMode) { e.preventDefault(); return; }
+
+                holdTimer = setTimeout(() => {
+                    navigator.mediaDevices.getUserMedia({ audio: true })
+                        .then(stream => {
+                            chunks = [];
+                            recorder = new MediaRecorder(stream);
+                            recorder.ondataavailable = e => chunks.push(e.data);
+                            recorder.onstop = () => {
+                                const blob = new Blob(chunks, { type: 'audio/webm' });
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                    data.audio = reader.result;
+                                    localStorage.setItem('soundboardButtons', JSON.stringify(buttons));
+                                    alert("Recording saved!");
+                                    btn.textContent = data.emoticon;
+                                };
+                                reader.readAsDataURL(blob);
+                                stream.getTracks().forEach(t => t.stop());
+                            };
+                            recorder.start();
+                            btn.classList.add('recording');
+                            btn.textContent = 'REC';
+                        })
+                        .catch(() => alert("Allow microphone access"));
+                }, 3000);
+            }, { passive: false });
+
+            btn.addEventListener('touchend', () => {
+                clearTimeout(holdTimer);
+                if (editMode) return;
+                if (recorder?.state === 'recording') {
+                    recorder.stop();
+                    btn.classList.remove('recording');
+                } else if (data.audio) {
+                    new Audio(data.audio).play();
+                }
+            });
+
+            container.appendChild(btn);
+        }
+
+        // Load all buttons
+        buttons.forEach(createButton);
+
+        // Add new button
+        addBtn.onclick = () => {
+            if (editMode) editBtn.click();
+            emoji.value = 'Microphone';
+            modal.style.display = 'flex';
+        };
+
+        [cancelBtn, modal].forEach(el => el.onclick = e => {
+            if (e.target === el) modal.style.display = 'none';
+        });
+
+        emoji.onclick = () => {
+            emoji.removeAttribute('readonly');
+            emoji.focus();
+            alert("Now pick any emoji from your keyboard!");
+        };
+
+        emoji.onblur = () => {
+            const e = [...emoji.value.matchAll(/\p{Emoji}/gu)].slice(0,2).join('') || 'Speaker';
+            emoji.value = e;
+            emoji.setAttribute('readonly', true);
+        };
+
+        saveBtn.onclick = () => {
+            const newBtn = {
+                id: Date.now() + '',
+                color: colorInput.value,
+                emoticon: emoji.value || 'Microphone',
+                audio: null
+            };
+            buttons.push(newBtn);
+            localStorage.setItem('soundboardButtons', JSON.stringify(buttons));
+            createButton(newBtn);
+            modal.style.display = 'none';
+        };
+    </script>
+</body>
+</html>
