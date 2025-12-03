@@ -43,6 +43,7 @@
             justify-content: center;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            touch-action: none;
         }
 
         .action-button:active {
@@ -327,6 +328,8 @@
                     console.error('Microphone access denied or failed:', err);
                     alert('Microphone access failed. Please ensure permissions are granted and try again.');
                     buttonElement.classList.remove('recording');
+                    const data = buttonsData.find(b => b.id === buttonId);
+                    if(data) buttonElement.innerHTML = data.emoticon;
                 });
         }
 
@@ -368,8 +371,8 @@
         function setupButtonEvents(buttonElement, buttonData) {
             let isHolding = false;
             
-            const startEvent = 'touchstart';
-            const endEvent = 'touchend';
+            const startEvent = 'pointerdown';
+            const endEvent = 'pointerup';
             
             // This function is the ONLY thing that runs when button is tapped/held
             function handleTapOrHold(e) {
@@ -385,6 +388,11 @@
                 isHolding = false; 
                 holdTimer = setTimeout(() => {
                     isHolding = true; // Timer completed, it's a hold
+                    
+                    // Immediate feedback to address "takes much longer" complaint
+                    buttonElement.classList.add('recording');
+                    buttonElement.innerHTML = '🎤 ...';
+                    
                     startRecording(buttonData.id, buttonElement);
                 }, HOLD_TO_START_MS);
             }
@@ -412,6 +420,7 @@
             // Set up listeners
             buttonElement.addEventListener(startEvent, handleTapOrHold);
             buttonElement.addEventListener(endEvent, handleRelease);
+            buttonElement.addEventListener('pointerleave', handleRelease);
         }
 
         function renderButton(buttonData) {
@@ -448,7 +457,7 @@
                     button.style.boxShadow = '0 0 10px 3px red';
                     
                     // Add listener to the overlay for deletion
-                    overlay.addEventListener('touchstart', (e) => {
+                    overlay.addEventListener('pointerdown', (e) => {
                         e.stopPropagation(); // Prevent the main button touch handler from firing
                         deleteButton(buttonId);
                     });
