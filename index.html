@@ -172,11 +172,11 @@
         const EMOTICON_INPUT = document.getElementById('emoticonInput');
         
         // Timer constants
-        const HOLD_TO_START_MS = 5000; // 5 seconds to start recording
+        const HOLD_TO_START_MS = 3000; // 5 seconds to start recording
         const MAX_RECORD_DURATION_MS = 2000; // Auto-stop after 2 seconds of recording
         const TAP_RESET_MS = 400; // Time window to count consecutive taps
         const TRIPLE_TAP_REQUIRED = 3; // The number of taps needed to delete
-        const VOLUME_GAIN_LEVEL = 2.5; // Gain level for volume boost (2.5 is 250%)
+        const VOLUME_GAIN_LEVEL = 5.0; // Gain level for volume boost (2.5 is 250%)
 
         let buttonsData = JSON.parse(localStorage.getItem('soundboardButtons') || '[]');
         
@@ -345,9 +345,6 @@
             let tapTimeout;   
             let recordingStream = null;
         
-            const HOLD_TO_START_MS = 5000;
-            const TAP_RESET_MS = 400; 
-            const TRIPLE_TAP_REQUIRED = 3; 
         
             const startEvent = 'touchstart';
             const endEvent = 'touchend';
@@ -357,7 +354,6 @@
                 e.preventDefault(); 
                 isHolding = false; 
         
-                // Start the timer to detect a 5-second hold
                 holdTimer = setTimeout(() => {
                     isHolding = true; 
                     startRecording(buttonData.id, buttonElement);
@@ -366,41 +362,45 @@
         
             // 2. END HOLD/TAP (Playback/Record Stop/Delete Logic)
             buttonElement.addEventListener(endEvent, () => {
-                // Clear the initial hold timer immediately
+                // Clear the hold timer immediately, regardless of what happens next.
                 clearTimeout(holdTimer); 
                 
                 if (isHolding) {
                     // CASE 1: Successful Hold (Recording completed)
                     stopRecording(buttonData.id, buttonElement, recordingStream);
                     
-                    // Crucial: A hold should not count as a tap for deletion
+                    // If it was a hold, reset all tap counters/timers
                     tapCount = 0; 
                     clearTimeout(tapTimeout);
+        
                 } else {
                     // CASE 2: Single or Multiple Taps
                     
-                    // Increment the tap counter
                     tapCount++;
         
-                    // Clear the existing reset timer and set a new one
-                    clearTimeout(tapTimeout);
-                    
+                    // If we hit the delete threshold, execute delete immediately
                     if (tapCount === TRIPLE_TAP_REQUIRED) {
                         // TRIPLE TAP DETECTED!
+                        clearTimeout(tapTimeout); // Prevent any pending playback
                         deleteButton(buttonData.id);
-                        tapCount = 0; // Reset tap count
+                        tapCount = 0; // Reset count
                         
                     } else {
-                        // Not 3 taps yet. Set a timer to check if the user stops tapping (i.e., a single/double tap was intended)
+                        // Not 3 taps yet. Set or reset the timer.
+                        
+                        // Clear any existing timer to wait for the next tap
+                        clearTimeout(tapTimeout);
+                        
+                        // Set the timer to check if the user stops tapping
                         tapTimeout = setTimeout(() => {
                             
-                            // FIX: We only play the audio if the user stops tapping before hitting 3.
-                            // This is for single and double-tap intent.
+                            // This code only runs IF the user stops tapping for 400ms.
+                            // This handles a single tap (tapCount=1) or a double tap (tapCount=2).
                             if (tapCount > 0) { 
                                 if (audioContext.state === 'suspended') {
                                     audioContext.resume();
                                 }
-                                // Play the sound once!
+                                // Play the sound ONCE for the entire sequence
                                 playAudio(buttonData.audioDataUrl); 
                             }
                             
