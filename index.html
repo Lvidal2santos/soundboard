@@ -161,6 +161,9 @@
         // Timer constants
         const HOLD_TO_START_MS = 5000; // 5 seconds to start recording
         const MAX_RECORD_DURATION_MS = 2000; // Auto-stop after 2 seconds of recording
+
+        // Output constants
+        const VOLUME_GAIN_LEVEL = 2.5; // Experiment with this value (e.g., 2.0 to 4.0)
         
         let buttonsData = JSON.parse(localStorage.getItem('soundboardButtons') || '[]');
         
@@ -263,7 +266,6 @@
                 });
         }
 
-        // FIX: Using Web Audio API for reliable playback
         function playAudio(audioDataUrl) {
             if (!audioDataUrl) {
                 console.log("No audio recorded yet.");
@@ -277,12 +279,23 @@
                 
                 // 2. Decode the audio data
                 audioContext.decodeAudioData(audioBuffer, (buffer) => {
-                    // 3. Create a source node
+                    
+                    // --- VOLUME BOOSTING LOGIC ---
+                    
+                    // A. Create the source node (where the audio data comes from)
                     const source = audioContext.createBufferSource();
                     source.buffer = buffer;
                     
-                    // 4. Connect to speakers and play
-                    source.connect(audioContext.destination);
+                    // B. Create the Gain Node (the volume control)
+                    const gainNode = audioContext.createGain();
+                    gainNode.gain.value = VOLUME_GAIN_LEVEL; // Apply the boost
+                    
+                    // C. Connect the nodes in sequence: Source -> Gain -> Destination
+                    source.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    // --- END VOLUME BOOSTING LOGIC ---
+                    
                     source.start(0);
                 }, (e) => {
                     console.error("Error decoding audio data:", e);
