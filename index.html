@@ -77,27 +77,28 @@
             z-index: 5;
         }
 
-        /* Fixed Controls Fixes - UPDATED FOR VISIBILITY */
+        /* Fixed Controls Fixes - FINAL FIX FOR VISIBILITY */
         #fixed-controls {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            /* Move controls slightly inward from the corner */
+            bottom: 30px; 
+            right: 30px; 
             display: flex;
-            /* FIX: Use reverse direction so buttons stack from right to left */
             flex-direction: row-reverse; 
-            gap: 10px;
-            /* Ensure it sits above the main content */
-            z-index: 100; 
+            gap: 15px; /* Increased gap for clarity */
+            /* Maximum z-index to ensure visibility */
+            z-index: 9999; 
         }
         
         .fixed-action-button {
-            width: 60px;
-            height: 60px;
+            /* Reduced size slightly to ensure it fits easily */
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
             color: white;
-            font-size: 30px;
+            font-size: 28px;
             border: none;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4); /* Stronger shadow */
             cursor: pointer;
         }
 
