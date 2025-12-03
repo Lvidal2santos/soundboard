@@ -337,14 +337,18 @@
             }
         }
 
-        // --- UI and Event Handling (Triple-Tap Logic) ---
-
+                // --- UI and Event Handling (Triple-Tap Logic) ---
+        
         function setupButtonEvents(buttonElement, buttonData) {
             let isHolding = false;
             let tapCount = 0; 
             let tapTimeout;   
-            let recordingStream = null; // Reference to the stream for stopping resources
-
+            let recordingStream = null;
+        
+            const HOLD_TO_START_MS = 5000;
+            const TAP_RESET_MS = 400; 
+            const TRIPLE_TAP_REQUIRED = 3; 
+        
             const startEvent = 'touchstart';
             const endEvent = 'touchend';
             
@@ -352,21 +356,21 @@
             buttonElement.addEventListener(startEvent, (e) => {
                 e.preventDefault(); 
                 isHolding = false; 
-
+        
                 // Start the timer to detect a 5-second hold
                 holdTimer = setTimeout(() => {
-                    isHolding = true; // Timer completed, it's a hold, start recording
+                    isHolding = true; 
                     startRecording(buttonData.id, buttonElement);
                 }, HOLD_TO_START_MS);
             });
-
+        
             // 2. END HOLD/TAP (Playback/Record Stop/Delete Logic)
             buttonElement.addEventListener(endEvent, () => {
                 // Clear the initial hold timer immediately
                 clearTimeout(holdTimer); 
                 
                 if (isHolding) {
-                    // CASE 1: Successful Hold (Recording completed or auto-stop pending)
+                    // CASE 1: Successful Hold (Recording completed)
                     stopRecording(buttonData.id, buttonElement, recordingStream);
                     
                     // Crucial: A hold should not count as a tap for deletion
@@ -377,34 +381,35 @@
                     
                     // Increment the tap counter
                     tapCount++;
-
+        
                     // Clear the existing reset timer and set a new one
                     clearTimeout(tapTimeout);
-                    tapTimeout = setTimeout(() => {
-                        
-                        // If this timer expires, the user stopped tapping.
-                        if (tapCount > 0 && tapCount < TRIPLE_TAP_REQUIRED) {
-                            // It was a single tap or a double tap, so PLAY the sound now
-                            if (audioContext.state === 'suspended') {
-                                audioContext.resume();
-                            }
-                            playAudio(buttonData.audioDataUrl);
-                        }
-                        tapCount = 0; // Reset for the next gesture
-                    }, TAP_RESET_MS);
-
+                    
                     if (tapCount === TRIPLE_TAP_REQUIRED) {
                         // TRIPLE TAP DETECTED!
-                        clearTimeout(tapTimeout); // Stop the playback timer
                         deleteButton(buttonData.id);
                         tapCount = 0; // Reset tap count
+                        
+                    } else {
+                        // Not 3 taps yet. Set a timer to check if the user stops tapping (i.e., a single/double tap was intended)
+                        tapTimeout = setTimeout(() => {
+                            
+                            // FIX: We only play the audio if the user stops tapping before hitting 3.
+                            // This is for single and double-tap intent.
+                            if (tapCount > 0) { 
+                                if (audioContext.state === 'suspended') {
+                                    audioContext.resume();
+                                }
+                                // Play the sound once!
+                                playAudio(buttonData.audioDataUrl); 
+                            }
+                            
+                            tapCount = 0; // Reset for the next gesture sequence
+                        }, TAP_RESET_MS);
                     }
-                    
-                    // For the first two taps, we do nothing immediately, waiting for the third tap or timeout.
                 }
             });
         }
-
         function renderButton(buttonData) {
             const button = document.createElement('button');
             button.className = 'action-button';
