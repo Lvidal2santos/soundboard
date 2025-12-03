@@ -77,15 +77,17 @@
             z-index: 5;
         }
 
-        /* Fixed Controls Fixes */
+        /* Fixed Controls Fixes - UPDATED FOR VISIBILITY */
         #fixed-controls {
             position: fixed;
             bottom: 20px;
             right: 20px;
             display: flex;
-            flex-direction: row; /* Ensure buttons are side-by-side */
+            /* FIX: Use reverse direction so buttons stack from right to left */
+            flex-direction: row-reverse; 
             gap: 10px;
-            z-index: 10;
+            /* Ensure it sits above the main content */
+            z-index: 100; 
         }
         
         .fixed-action-button {
@@ -229,7 +231,7 @@
         const CONTAINER = document.getElementById('container');
         const ADD_BUTTON = document.getElementById('addButton');
         const EDIT_BUTTON = document.getElementById('editButton');
-        const CANCEL_BUTTON = document.getElementById('cancelButton'); // NEW
+        const CANCEL_BUTTON = document.getElementById('cancelButton'); 
         const MODAL = document.getElementById('modal');
         const SAVE_BUTTON = document.getElementById('saveButton');
         const COLOR_INPUT = document.getElementById('colorInput');
@@ -391,8 +393,7 @@
                 e.preventDefault(); 
                 
                 if (isEditMode) {
-                    // IF IN EDIT MODE: Tap/touchstart means we do nothing on the main button
-                    // The deletion must be handled by the 'delete-overlay' element's listener.
+                    // IF IN EDIT MODE: Do nothing on the main button
                     return; 
                 }
 
@@ -461,8 +462,8 @@
                     
                     // Add listener to the overlay for deletion
                     overlay.addEventListener('touchstart', (e) => {
-                        e.stopPropagation(); // Prevents main button logic
-                        e.preventDefault(); // Prevents mobile default actions
+                        e.stopPropagation(); 
+                        e.preventDefault(); 
                         deleteButton(buttonId);
                     });
                     
