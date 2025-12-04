@@ -1,4 +1,233 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mic Button Recorder Pro</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f4f7f9;
+        }
+
+        #container {
+            width: 100%;
+            max-width: 600px;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            /* Ensure space for fixed controls */
+            padding-bottom: 100px; 
+        }
+
+        .action-button {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            border: none;
+            color: white;
+            font-size: 48px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .action-button:active {
+            transform: scale(0.95);
+        }
+
+        .recording {
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+            to { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+        }
+        
+        /* Edit Mode Styles */
+        .delete-overlay {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 30px;
+            height: 30px;
+            background-color: red;
+            border-radius: 50%;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            z-index: 5;
+        }
+
+        /* Fixed Controls Fixes - FINAL FIX FOR VISIBILITY */
+        #fixed-controls {
+            position: fixed;
+            /* Move controls slightly inward from the corner */
+            bottom: 30px; 
+            right: 30px; 
+            display: flex;
+            flex-direction: row-reverse; 
+            gap: 15px; /* Increased gap for clarity */
+            /* Maximum z-index to ensure visibility */
+            z-index: 9999; 
+        }
+        
+        .fixed-action-button {
+            /* Reduced size slightly to ensure it fits easily */
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            color: white;
+            font-size: 28px;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4); /* Stronger shadow */
+            cursor: pointer;
+        }
+
+        #addButton {
+            background-color: #4cd964; /* Green */
+        }
+        
+        #editButton {
+            background-color: #ff9500; /* Orange */
+        }
+        
+        .edit-mode-active {
+            background-color: #5856d6 !important; /* Purple when active */
+        }
+
+        /* --- Modal Styling --- */
+        #modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; 
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 400px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .modal-content input[type="color"],
+        .modal-content input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .modal-content input[type="color"] {
+            height: 50px;
+            padding: 0;
+        }
+        
+        .modal-content input[type="text"]#emoticonInput {
+            text-align: center; 
+            font-size: 24px; 
+            cursor: pointer;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        #saveButton {
+            flex-grow: 1;
+            padding: 10px;
+            background-color: #4cd964;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        #cancelButton {
+            flex-grow: 1;
+            padding: 10px;
+            background-color: #8e8e93; /* Gray */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="container">
+        </div>
+
+    <div id="fixed-controls">
+        <button id="editButton" class="fixed-action-button">✏️</button>
+        <button id="addButton" class="fixed-action-button">+</button>
+    </div>
+
+    <div id="modal">
+        <div class="modal-content">
+            <h3>New Button Setup</h3>
+            <label for="colorInput">Button Color:</label>
+            <input type="color" id="colorInput" value="#6d7ef5">
+
+            <label for="emoticonInput">Emoticon (Use your keyboard's emoji selector):</label>
+            <input 
+                type="text" 
+                id="emoticonInput" 
+                placeholder="Enter 1 or 2 emojis" 
+                maxlength="2" 
+                value=""
+            >
+
+            <div class="modal-buttons">
+                <button id="cancelButton">Cancel</button>
+                <button id="saveButton">Create Button</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
         // --- Configuration and State ---
         const CONTAINER = document.getElementById('container');
         const ADD_BUTTON = document.getElementById('addButton');
@@ -10,8 +239,8 @@
         const EMOTICON_INPUT = document.getElementById('emoticonInput');
         
         // Timer constants
-        const HOLD_TO_START_MS = 2700; // FIX: Reduced from 3000ms to compensate for browser's touch delay (~300ms)
-        const MAX_RECORD_DURATION_MS = 2000; // Auto-stop after 2 seconds of recording
+        const HOLD_TO_START_MS = 2700; // 2.7s compensated hold time
+        const MAX_RECORD_DURATION_MS = 2000; // Auto-stop after 2 seconds
         const VOLUME_GAIN_LEVEL = 5.0; // Gain level for volume boost
 
         let buttonsData = JSON.parse(localStorage.getItem('soundboardButtons') || '[]');
@@ -92,7 +321,7 @@
                     mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
 
                     mediaRecorder.onstop = () => {
-                        // FIX: Changed MIME type for potential better iOS compatibility
+                        // Using MP4/AAC mime type for potential better iOS compatibility
                         const audioBlob = new Blob(audioChunks, { type: 'audio/mp4' }); 
                         
                         const reader = new FileReader();
@@ -166,9 +395,11 @@
                 e.preventDefault(); 
                 
                 if (isEditMode) {
+                    // IF IN EDIT MODE: Do nothing on the main button
                     return; 
                 }
 
+                // If not in Edit Mode, start the hold timer
                 isHolding = false; 
                 holdTimer = setTimeout(() => {
                     isHolding = true; 
@@ -303,3 +534,5 @@
         // Initial load
         loadButtons();
     </script>
+</body>
+</html>
